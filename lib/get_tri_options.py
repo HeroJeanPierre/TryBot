@@ -125,61 +125,11 @@ all_opps = np.array(all_percentages)
 
 all_opps=all_opps[np.argsort(all_opps[:,1])]
 
-for i in all_opps:
-	print(i)
+# for i in all_opps:
+	# print(i)
+	# If you want to set a minimum percentage to display
 # 	if float(i[]) < .0004:
 # 		all_opps = np.delete(all_opps, i, 0)
 
-
-# print(all_opps)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-	
-
-
-
-
-# example = 'BTC_ETH_LTC'
-# path = example.split('_')
-# principle = 1 # BTC
-
-
-
-# step1 = principle / float(getPrice(path[1] + path[0]))
-# step2 = step1/float(getPrice(path[2] + path[1]))
-# newPrice = step2 * float(getPrice(path[2] + path[0]))
-
-## print('Net Gain: {}'.format((100*((newPrice/1.0) - 1))))
-
-
-
-# step1 = principle / float(getPrice(path[1] + path[0]))
-# print('1 BTC buys {} ETH'.format(step1))
-
-# step2 = step1/float(getPrice(path[2] + path[1]))
-# print('{} ETH buys {} LTC'.format(step1, step2))
-
-# newPrice = step2 * float(getPrice(path[2] + path[0]))
-# print('{} LTC buys {} BTC'.format(step2, newPrice))
-
-## print('Net Gain: {}'.format((100*((newPrice/1.0) - 1))))
-
-# print(newPrice)
-
-
-
+print(all_opps)
+print(getPrice(all_opps[-1][0].split('_')[2] + all_opps[-1][0].split('_')[1]))

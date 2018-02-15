@@ -7,6 +7,16 @@ import csv
 import pprint
 pp = pprint.PrettyPrinter()
 
-test = requests.get('https://api.binance.com/{}'.format('/api/v1/depth'), params = {'symbol' : 'LTCBTC'})
-pp.pprint(test.json())
+# pp.pprint(test.json())
 
+
+def getAsk(pair):
+	all_orders = requests.get('https://api.binance.com/{}'.format('/api/v1/depth'), params = {'symbol' : pair})
+	asks = all_orders.json()['asks']
+
+	return asks[0][0	]		
+
+
+
+
+print(getAsk('BNBBTC'))
