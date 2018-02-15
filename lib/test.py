@@ -11,10 +11,14 @@ pp = pprint.PrettyPrinter()
 
 
 def getAsk(pair):
-	all_orders = requests.get('https://api.binance.com/{}'.format('/api/v1/depth'), params = {'symbol' : pair})
-	asks = all_orders.json()['asks']
-
-	return asks[0][0	]		
+	all_orders = requests.get('https://api.binance.com/{}'.format('/api/v3/ticker/bookTicker'))
+	for i in all_orders.json():
+		symbol = i['symbol']
+		if pair == symbol:
+			return i['askPrice']
+		# if pair == i['symbol']
+			# return i['askPrice']
+			
 
 
 
