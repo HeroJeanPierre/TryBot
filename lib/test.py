@@ -7,20 +7,15 @@ import csv
 import pprint
 pp = pprint.PrettyPrinter()
 
-# pp.pprint(test.json())
+with open('../cred/api_secret_binance', 'r') as f:
+	secret = f.read()
+with open('../cred/api_key_binance', 'r') as f:
+	key = f.read()
 
-
-def getAsk(pair):
-	all_orders = requests.get('https://api.binance.com/{}'.format('/api/v3/ticker/bookTicker'))
-	for i in all_orders.json():
-		symbol = i['symbol']
-		if pair == symbol:
-			return i['askPrice']
-		# if pair == i['symbol']
-			# return i['askPrice']
-			
+info = requests.get('https://api.binance.com/{}'.format('/api/v3/ticker/price'))
 
 
 
-
-print(getAsk('BNBBTC'))
+# # pp.pprint(test.json())
+# order = requests.get( params={'signature'})
+# all_orders = all_orders.json()

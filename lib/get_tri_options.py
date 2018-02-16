@@ -1,5 +1,7 @@
 # For Binance Web Sockets: 	https://github.com/binance-exchange/binance-official-api-docs/blob/master/web-socket-streams.md
 # For Binance REST API:		https://github.com/binance-exchange/binance-official-api-docs
+# Download time ~ 1.5s
+# Runtime ~ .005seconds
 import time
 import requests
 import pprint
@@ -76,56 +78,62 @@ def createCurrencyOppps():
 
 all_orders = requests.get('https://api.binance.com/{}'.format('/api/v3/ticker/bookTicker'))
 all_orders = all_orders.json()
-def getPrice(pair):
+def getAsk(pair):
 	for i in all_orders:
 		symbol = i['symbol']
 		if pair == symbol:
 			return i['askPrice']
 
+def getBid(pair):
+	for i in all_orders:
+		symbol = i['symbol']
+		if pair == symbol:
+			return i['bidPrice']
 
 all_percentages = []
-transaction_fee = .001
+transaction_fee = .0001
 def createTripletData():
 	for ETH_Path in ETH_Opps:
 		curr_split = ETH_Path.split('_')
 		principle = 1.0
 		
-		step1 = (principle / float(getPrice(curr_split[1] + curr_split[0]))) * (1.0 - transaction_fee)
-		step2 = step1/float(getPrice(curr_split[2] + curr_split[1])) * (1.0 - transaction_fee)
-		newPrice = step2 * float(getPrice(curr_split[2] + curr_split[0])) * (1.0 - transaction_fee)
-
-		all_percentages.append([ETH_Path, (100*((newPrice/1.0) - 1))])
+		step1 = principle / float(getAsk(curr_split[1] + curr_split[0])) * (1.0 - transaction_fee)
+		step2 = step1/float(getAsk(curr_split[2] + curr_split[1])) * (1.0 - transaction_fee)
+		newPrice = step2 * float(getBid(curr_split[2] + curr_split[0])) * (1.0 - transaction_fee)
+		if newPrice > 1.0:
+			all_percentages.append([ETH_Path, (100*((newPrice/1.0) - 1)),getAsk(curr_split[1] + curr_split[0]) ,getAsk(curr_split[2] + curr_split[1]), getBid(curr_split[2] + curr_split[0])])
 		# print('Net Gain: {}'.format((100*((newPrice/1.0) - 1))))
 
 	for BNB_Path in BNB_Opps:
 		curr_split = BNB_Path.split('_')
 		principle = 1.0
 		
-		step1 = principle / float(getPrice(curr_split[1] + curr_split[0])) * (1.0 - transaction_fee)
-		step2 = step1/float(getPrice(curr_split[2] + curr_split[1])) * (1.0 - transaction_fee)
-		newPrice = step2 * float(getPrice(curr_split[2] + curr_split[0])) * (1.0 - transaction_fee)
-
-		all_percentages.append([BNB_Path, (100*((newPrice/1.0) - 1))])
+		step1 = principle / float(getAsk(curr_split[1] + curr_split[0])) * (1.0 - transaction_fee)
+		step2 = step1/float(getAsk(curr_split[2] + curr_split[1])) * (1.0 - transaction_fee)
+		newPrice = step2 * float(getBid(curr_split[2] + curr_split[0])) * (1.0 - transaction_fee)
+		if newPrice > 1.0:
+			all_percentages.append([BNB_Path, (100*((newPrice/1.0) - 1)),getAsk(curr_split[1] + curr_split[0]) ,getAsk(curr_split[2] + curr_split[1]), getBid(curr_split[2] + curr_split[0])])
 		# print('Net Gain: {}'.format((100*((newPrice/1.0) - 1))))
 
-	for USDT_Path in USDT_Opps:
-		curr_split = USDT_Path.split('_')
-		principle = 1.0
+	# for USDT_Path in USDT_Opps:
+	# 	curr_split = USDT_Path.split('_')
+	# 	principle = 1.0
 		
 
-		step1 = principle * float(getPrice(curr_split[0] + curr_split[1])) * (1.0 - transaction_fee)
-		# print('1 {} buys {} {}'.format(curr_split[0], step1, curr_split[1]))
+	# 	step1 = principle * float(getAsk(curr_split[0] + curr_split[1])) * (1.0 - transaction_fee)
+	# 	# print('1 {} buys {} {}'.format(curr_split[0], step1, curr_split[1]))
 
-		step2 = step1/float(getPrice(curr_split[2] + curr_split[1])) * (1.0 - transaction_fee)
-		# print('{} {} buys {} {}'.format(step1,curr_split[1], step2, curr_split[2]))
+	# 	step2 = step1/float(getAsk(curr_split[2] + curr_split[1])) * (1.0 - transaction_fee)
+	# 	# print('{} {} buys {} {}'.format(step1,curr_split[1], step2, curr_split[2]))
 
-		newPrice = step2 * float(getPrice(curr_split[2] + curr_split[0])) * (1.0 - transaction_fee)
-		# print('{} {} buys {} {}'.format(step2, curr_split[2], newPrice, curr_split[0]))
+	# 	newPrice = step2 * float(getBid(curr_split[2] + curr_split[0])) * (1.0 - transaction_fee)
+	# 	# print('{} {} buys {} {}'.format(step2, curr_split[2], newPrice, curr_split[0]))
 
+	# 	if newPrice > 1.0:
+	# 		all_percentages.append([USDT_Path, (100*((newPrice/1.0) - 1))])
+	# 	# print('Net Gain: {}'.format((100*((newPrice/1.0) - 1))))
+	# 	# print(getPrice(all_opps[-1][0].split('_')[2] + all_opps[-1][0].split('_')[1]))
 
-		all_percentages.append([USDT_Path, (100*((newPrice/1.0) - 1))])
-		# print('Net Gain: {}'.format((100*((newPrice/1.0) - 1))))
-		# print(getPrice(all_opps[-1][0].split('_')[2] + all_opps[-1][0].split('_')[1]))
 
 def main():
 	t0 = time.time()
@@ -133,11 +141,14 @@ def main():
 	createCurrencyOppps()
 	createTripletData()
 
-	all_opps = np.array(all_percentages)
-	all_opps=all_opps[np.argsort(all_opps[:,1])]
-	print(all_opps)
+	# print(all_percentages)
+
+	if len(all_percentages) > 0:
+		all_opps = np.array(all_percentages)
+		all_opps=all_opps[np.argsort(all_opps[:,1])]
+		print(all_opps)
 	t1 = time.time()
 	print('Runtime {} seconds'.format(t1-t0))
-
+		
 if __name__ == '__main__':
 	main()
