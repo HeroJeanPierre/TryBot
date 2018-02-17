@@ -2,32 +2,48 @@
 # For Binance REST API:		https://github.com/binance-exchange/binance-official-api-docs
 # Download time ~ 1.5s
 # Runtime ~ .005seconds
+
 import time
 import requests
 import pprint
+pp = pprint.PrettyPrinter()
 import pickle
 import numpy as np
 import sys
 import csv
-pp = pprint.PrettyPrinter()
 
 
-class TryBot:
+class TryBotDataScraper:
+
+	# Set intitial variables for data
 	def __init__(self):
+		# These are all the pairs for primary currencies
+		# Ex. XRPBTC, STRATETH, ETHUSDT
 		self.BTC_Pairs = []
 		self.ETH_Pairs = []
 		self.BNB_Pairs = []
 		self.USDT_Pairs = []
+
+		# These will hold the possible triplets that could be
+		# traded
 		self.ETH_Opps = []
 		self.BNB_Opps = []
 		self.USDT_Opps = []
+
+		# Will hold, paths, percentage data, and potentially volume
 		self.all_percentages = []
-		self.transaction_fee = .001
+
+		# Transaction fees are 0.015% with BNB fees turned on, so this is optimal. Just have like $10 in BNB account
+		self.transaction_fee = .00015 # With BNB Fees
 	
+		# Download pairs and prices, this will just be used for the pairs though
 		self.pairs = (requests.get('https://api.binance.com/api/v3/ticker/price')).json()
+
+		# This calls the order book for every currency, necissary in order to get the bid and ask
 		self.all_orders = (requests.get('https://api.binance.com/api/v3/ticker/bookTicker')).json()
 
 
+	# This just resets the values so the loop can re-evaluate for another time period
 	def resetVals(self):
 		self.BTC_Pairs = []
 		self.ETH_Pairs = []
@@ -37,22 +53,14 @@ class TryBot:
 		self.BNB_Opps = []
 		self.USDT_Opps = []
 		self.all_percentages = []
-		# self.pairs = {}
 
 
-	# Get all the currency pairs and there prices on Binance
+	# Update the order sheets for currency pairs 
 	def updateOrders(self):
 		self.all_orders = (requests.get('https://api.binance.com/api/v3/ticker/bookTicker')).json()
-		
-
-	# Make json interactable
-	# self.BTC_Pairs = []
-	# self.ETH_Pairs = []
-	# self.BNB_Pairs = []
-	# self.USDT_Pairs = []
 
 
-	# Create List of pairs for above lists ^
+	# Create list of all currency pairs
 	def createCurrencyPairs(self):
 		for pair in self.pairs:
 			curr_pair = pair['symbol']
@@ -69,6 +77,7 @@ class TryBot:
 		# print('{} BTC pairs...\n{}\n\n{} ETH pairs...\n{}\n\n{} BNB pairs...\n{}\n\n{} USDT pairs...\n{}\n\n'.format(len(self.BTC_Pairs), self.BTC_Pairs, len(self.ETH_Pairs), self.ETH_Pairs, len(self.BNB_Pairs), self.BNB_Pairs, len(self.USDT_Pairs), self.USDT_Pairs))
 
 	
+	# Find all currnency triplets w/ BTC as base
 	def createCurrencyOpps(self):
 		# Traverse all BTC Pairs
 		for btc1 in self.BTC_Pairs:
@@ -93,31 +102,24 @@ class TryBot:
 
 		# print('{} Total Opps Found!\n\n{} ETH opportunities...\n{}\n\n{} BNB opportunities...\n{}\n\n{} USDT opportunities...\n{}\n\n'.format((len(self.ETH_Opps) + len(self.BNB_Opps) + len(self.USDT_Opps)),len(self.ETH_Opps), self.ETH_Opps, len(self.BNB_Opps), self.BNB_Opps, len(self.USDT_Opps), self.USDT_Opps))
 
-	# def getPrice(symbol):
-	# 	for curr_pair in pairs:
-	# 		if symbol == curr_pair['symbol']:
-	# 					return curr_pair['price']
-
-
-	def getAllOrders(self):
-		target = '/api/v3/ticker/bookTicker'
-		return (requests.get('https://api.binance.com/' + target)).json()
-		
-		
+	
+	# get the current ask price for given currency pair
 	def getAsk(self, pair):
 		for i in self.all_orders:
 			symbol = i['symbol']
 			if pair == symbol:
 				return i['askPrice']
 
+
+	# get the current ask price for given currency pair
 	def getBid(self, pair):
 		for i in self.all_orders:
 			symbol = i['symbol']
 			if pair == symbol:
 				return i['bidPrice']
 
-	# self.all_percentages = []
-	
+
+	# create data for possible percentage gains
 	def createTripletData(self):
 		for self.ETH_Path in self.ETH_Opps:
 			curr_split = self.ETH_Path.split('_')
@@ -164,32 +166,29 @@ class TryBot:
 
 def main():
 
+	# Open csv file
 	csv_tag = time.strftime('%b_%d_%H_%M_%S')
 	csv_file = open('found_data_{}.csv'.format(csv_tag) , 'w')	
 	csv_writer = csv.writer(csv_file)
 	csv_writer.writerow(['path', 'percentage', 'time'])
 
-
-
-
 	timeTotal = time.time()
-	# Run this continoously
 
+	# Run this continoously
 	x = float(input("Minutes would you like to test for: "))
 	print("Testing for for {} seconds | {} hours | {} days".format(x*60, x/60, (x/(60*24))))
 
 	# Will contain found pairs
 	allGathered = []
 
-	bot = TryBot()
+	# 
+	bot = TryBotDataScraper()
+
+
 	totalSecond = x*60
-
-
 	while (time.time() - timeTotal) < totalSecond:
 		bot.resetVals()
 		t0 = time.time()
-		# bot.all_orders = getAllOrders()
-		# bot.updatePairs()
 		bot.createCurrencyPairs()
 		bot.createCurrencyOpps()
 		bot.createTripletData()
@@ -202,9 +201,6 @@ def main():
 
 			for i in all_opps:
 				csv_writer.writerow([i[0], i[1], time_date])
-				
-
-			# allGathered.append(all_opps)
 		else:
 			print('No Triplets Found.')
 		bot.updateOrders()
