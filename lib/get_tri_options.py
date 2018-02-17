@@ -22,7 +22,7 @@ class TryBot:
 		self.BNB_Opps = []
 		self.USDT_Opps = []
 		self.all_percentages = []
-		self.transaction_fee = .000
+		self.transaction_fee = .001
 	
 		self.pairs = (requests.get('https://api.binance.com/api/v3/ticker/price')).json()
 		self.all_orders = (requests.get('https://api.binance.com/api/v3/ticker/bookTicker')).json()
@@ -164,7 +164,8 @@ class TryBot:
 
 def main():
 
-	csv_file = open('found_data.csv', 'w')	
+	csv_tag = time.strftime('%b_%d_%H_%M_%S')
+	csv_file = open('found_data_{}.csv'.format(csv_tag) , 'w')	
 	csv_writer = csv.writer(csv_file)
 	csv_writer.writerow(['path', 'percentage', 'time'])
 
