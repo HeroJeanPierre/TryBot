@@ -8,6 +8,7 @@ import pprint
 import pickle
 import numpy as np
 import sys
+import csv
 pp = pprint.PrettyPrinter()
 
 
@@ -21,7 +22,7 @@ class TryBot:
 		self.BNB_Opps = []
 		self.USDT_Opps = []
 		self.all_percentages = []
-		self.transaction_fee = .001
+		self.transaction_fee = .000
 	
 		self.pairs = (requests.get('https://api.binance.com/api/v3/ticker/price')).json()
 		self.all_orders = (requests.get('https://api.binance.com/api/v3/ticker/bookTicker')).json()
@@ -162,6 +163,14 @@ class TryBot:
 
 
 def main():
+
+	csv_file = open('found_data.csv', 'w')	
+	csv_writer = csv.writer(csv_file)
+	csv_writer.writerow(['path', 'percentage', 'time'])
+
+
+
+
 	timeTotal = time.time()
 	# Run this continoously
 
@@ -180,21 +189,27 @@ def main():
 		t0 = time.time()
 		# bot.all_orders = getAllOrders()
 		# bot.updatePairs()
-
-
 		bot.createCurrencyPairs()
 		bot.createCurrencyOpps()
 		bot.createTripletData()
+
 		if len(bot.all_percentages) > 0:
 			all_opps = np.array(bot.all_percentages)
 			all_opps=all_opps[np.argsort(all_opps[:,1])]
 			print(all_opps[:,:2])
-			allGathered.append(all_opps)
+			time_date = time.strftime('%b %d %H:%M:%S')
+
+			for i in all_opps:
+				csv_writer.writerow([i[0], i[1], time_date])
+				
+
+			# allGathered.append(all_opps)
 		else:
 			print('No Triplets Found.')
 		bot.updateOrders()
-		print('Runtime {} seconds'.format(time.time()-t0))
 
+		print('Runtime {} seconds'.format(time.time()-t0))
+	csv_file.close()
 	print("Total time took {} seconds".format(time.time() - timeTotal))
 
 	with open("../data/test_data/found_data.pickle", 'wb') as f:
