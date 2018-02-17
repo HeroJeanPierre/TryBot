@@ -164,8 +164,18 @@ class TryBot:
 def main():
 	timeTotal = time.time()
 	# Run this continoously
+
+	x = float(input("Minutes would you like to test for: "))
+	print("Testing for for {} seconds | {} hours | {} days".format(x*60, x/60, (x/(60*24))))
+
+	# Will contain found pairs
+	allGathered = []
+
 	bot = TryBot()
-	while True:
+	totalSecond = x*60
+
+
+	while (time.time() - timeTotal) < totalSecond:
 		bot.resetVals()
 		t0 = time.time()
 		# bot.all_orders = getAllOrders()
@@ -179,12 +189,16 @@ def main():
 			all_opps = np.array(bot.all_percentages)
 			all_opps=all_opps[np.argsort(all_opps[:,1])]
 			print(all_opps[:,:2])
+			allGathered.append(all_opps)
 		else:
 			print('No Triplets Found.')
 		bot.updateOrders()
 		print('Runtime {} seconds'.format(time.time()-t0))
 
 	print("Total time took {} seconds".format(time.time() - timeTotal))
+
+	with open("../data/test_data/found_data.pickle", 'wb') as f:
+		pickle.dump(allGathered, f)
 
 if __name__ == '__main__':
 	main()
