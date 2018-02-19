@@ -1,5 +1,8 @@
-# For Binance Web Sockets: 	https://github.com/binance-exchange/binance-official-api-docs/blob/master/web-socket-streams.md
-# For Binance REST API:		https://github.com/binance-exchange/binance-official-api-docs
+# The purpose of this file is to retrieve data
+# for triplet pairs
+
+# For Binance Web Sockets:  https://github.com/binance-exchange/binance-official-api-docs/blob/master/web-socket-streams.md
+# For Binance REST API:     https://github.com/binance-exchange/binance-official-api-docs
 # Download time ~ 1.5s
 # Runtime ~ .005seconds
 
@@ -33,7 +36,7 @@ class TryBotDataScraper:
         self.all_percentages = []
 
         # Transaction fees are 0.015% with BNB fees turned on, so this is optimal. Just have like $10 in BNB account
-        self.transaction_fee = .00015  # With BNB Fees
+        self.transactionFee = .00015  # With BNB Fees
 
         # Download pairs and prices, this will just be used for the pairs though
         self.pairs = (requests.get(
@@ -101,103 +104,134 @@ class TryBotDataScraper:
         # print('{} Total Opps Found!\n\n{} ETH opportunities...\n{}\n\n{} BNB opportunities...\n{}\n\n{} USDT opportunities...\n{}\n\n'.format((len(self.ETH_Opps) + len(self.BNB_Opps) + len(self.USDT_Opps)),len(self.ETH_Opps), self.ETH_Opps, len(self.BNB_Opps), self.BNB_Opps, len(self.USDT_Opps), self.USDT_Opps))
 
     # get the current ask price for given currency pair
-    def getAsk(self, pair):
+    def getAskPrice(self, pair):
         for i in self.all_orders:
             symbol = i['symbol']
             if pair == symbol:
                 return i['askPrice']
 
     # get the current ask price for given currency pair
-    def getBid(self, pair):
+    def getBidPrice(self, pair):
         for i in self.all_orders:
             symbol = i['symbol']
             if pair == symbol:
                 return i['bidPrice']
 
+    def getAskVolume(self, pair):
+        for i in self.all_orders:
+            symbol = i['symbol']
+            if pair == symbol:
+                return i['askQty']
+
+    def getBidVolume(self, pair):
+        for i in self.all_orders:
+            symbol = i['symbol']
+            if pair == symbol:
+                return i['bidQty']
+
+    def getAskPriceInUSDT(self, pair):
+        if 'USDT' in pair:
+            return float(self.getAskPrice(pair))
+        else:
+            return float(self.getAskPrice(pair)) * float(self.getAskPrice(pair[-3:] + 'USDT'))
+
+    def getBidPriceInUSDT(self, pair):
+            if 'USDT' in pair:
+                return float(self.getBidPrice(pair))
+            else:
+                return float(self.getBidPrice(pair)) * float(self.getBidPrice(pair[-3:] + 'USDT'))
+
+    def getAskValueInUSDT(self, pair):
+        if 'USDT' in pair:
+            return float(self.getAskVolume(pair)) * float(self.getAskPrice(pair))
+        else:
+            return float(self.getAskVolume(pair)) * self.getAskPriceInUSDT(pair)
+
+    def getBidValueInUSDT(self, pair):
+        if 'USDT' in pair:
+            return float(self.getBidVolume(pair)) * float(self.getBidPrice(pair))
+        else:
+            return float(self.getBidVolume(pair)) * self.getBidPriceInUSDT(pair)
+
     # create data for possible percentage gains
     def createTripletData(self):
-        for self.ETH_Path in self.ETH_Opps:
-            curr_split = self.ETH_Path.split('_')
+        for ETH_Path in self.ETH_Opps:
+            currSplit = ETH_Path.split('_')
             principle = 1.0
 
-            step1 = principle / \
-                float(self.getAsk(
-                    curr_split[1] + curr_split[0])) * (1.0 - self.transaction_fee)
-            step2 = step1 / \
-                float(self.getAsk(
-                    curr_split[2] + curr_split[1])) * (1.0 - self.transaction_fee)
-            newPrice = step2 * \
-                float(self.getBid(
-                    curr_split[2] + curr_split[0])) * (1.0 - self.transaction_fee)
+            step1 = principle / float(self.getAskPrice(currSplit[1] + currSplit[0])) * (1.0 - self.transactionFee)
+            step2 = step1 / float(self.getAskPrice(currSplit[2] + currSplit[1])) * (1.0 - self.transactionFee)
+            newPrice = step2 * float(self.getBidPrice(currSplit[2] + currSplit[0])) * (1.0 - self.transactionFee)
 
             if newPrice > (1.0005):
-                self.all_percentages.append([self.ETH_Path, (100 * ((newPrice / 1.0) - 1)), self.getAsk(
-                    curr_split[1] + curr_split[0]), self.getAsk(curr_split[2] + curr_split[1]), self.getBid(curr_split[2] + curr_split[0])])
-            # print('Net Gain: {}'.format((100*((newPrice/1.0) - 1))))
+                found_pair = ETH_Path
+                percentage = (100 * ((newPrice / 1.0) - 1))
+                pathValue1 = self.getAskValueInUSDT(currSplit[1] + currSplit[0])
+                pathValue2 = self.getAskValueInUSDT(currSplit[2] + currSplit[1])
+                pathValue3 = self.getBidValueInUSDT(currSplit[2] + currSplit[0])
+
+                self.all_percentages.append([found_pair, percentage, pathValue1, pathValue2, pathValue3])
 
         for BNB_Path in self.BNB_Opps:
-            curr_split = BNB_Path.split('_')
+            currSplit = BNB_Path.split('_')
             principle = 1.0
 
-            step1 = principle / \
-                float(self.getAsk(
-                    curr_split[1] + curr_split[0])) * (1.0 - self.transaction_fee)
-            step2 = step1 / \
-                float(self.getAsk(
-                    curr_split[2] + curr_split[1])) * (1.0 - self.transaction_fee)
-            newPrice = step2 * \
-                float(self.getBid(
-                    curr_split[2] + curr_split[0])) * (1.0 - self.transaction_fee)
+            step1 = principle / float(self.getAskPrice(currSplit[1] + currSplit[0])) * (1.0 - self.transactionFee)
+            step2 = step1 / float(self.getAskPrice(currSplit[2] + currSplit[1])) * (1.0 - self.transactionFee)
+            newPrice = step2 * float(self.getBidPrice(currSplit[2] + currSplit[0])) * (1.0 - self.transactionFee)
 
             if newPrice > (1.0005):
-                self.all_percentages.append([BNB_Path, (100 * ((newPrice / 1.0) - 1)), self.getAsk(
-                    curr_split[1] + curr_split[0]), self.getAsk(curr_split[2] + curr_split[1]), self.getBid(curr_split[2] + curr_split[0])])
-            # print('Net Gain: {}'.format((100*((newPrice/1.0) - 1))))
+                found_pair = BNB_Path
+                percentage = (100 * ((newPrice / 1.0) - 1))
+                pathValue1 = self.getAskValueInUSDT(currSplit[1] + currSplit[0])
+                pathValue2 = self.getAskValueInUSDT(currSplit[2] + currSplit[1])
+                pathValue3 = self.getBidValueInUSDT(currSplit[2] + currSplit[0])
+
+                self.all_percentages.append([found_pair, percentage, pathValue1, pathValue2, pathValue3])
 
         for USDT_Path in self.USDT_Opps:
-            curr_split = USDT_Path.split('_')
+            currSplit = USDT_Path.split('_')
             principle = 1.0
 
-            step1 = principle * \
-                float(self.getAsk(
-                    curr_split[0] + curr_split[1])) * (1.0 - self.transaction_fee)
-            # print('1 {} buys {} {}'.format(curr_split[0], step1, curr_split[1]))
-
-            step2 = step1 / \
-                float(self.getAsk(
-                    curr_split[2] + curr_split[1])) * (1.0 - self.transaction_fee)
-            # print('{} {} buys {} {}'.format(step1,curr_split[1], step2, curr_split[2]))
-
-            newPrice = step2 * \
-                float(self.getBid(
-                    curr_split[2] + curr_split[0])) * (1.0 - self.transaction_fee)
-            # print('{} {} buys {} {}'.format(step2, curr_split[2], newPrice, curr_split[0]))
-
+            step1 = principle * float(self.getAskPrice(currSplit[0] + currSplit[1])) * (1.0 - self.transactionFee)
+            # print('1 {} buys {} {}'.format(currSplit[0], step1, currSplit[1]))
+            step2 = step1 / float(self.getAskPrice(currSplit[2] + currSplit[1])) * (1.0 - self.transactionFee)
+            # print('{} {} buys {} {}'.format(step1,currSplit[1], step2, currSplit[2]))
+            newPrice = step2 * float(self.getBidPrice(currSplit[2] + currSplit[0])) * (1.0 - self.transactionFee)
+            # print('{} {} buys {} {}'.format(step2, currSplit[2], newPrice, currSplit[0]))
 
             if newPrice > (1.0005):
-                self.all_percentages.append([USDT_Path, (100 * ((newPrice / 1.0) - 1)), self.getAsk(
-                    curr_split[0] + curr_split[1]), self.getAsk(curr_split[2] + curr_split[1]), self.getBid(curr_split[2] + curr_split[0])])
+                found_pair = USDT_Path
+                percentage = (100 * ((newPrice / 1.0) - 1))
+                pathValue1 = self.getAskValueInUSDT(currSplit[0] + currSplit[1])
+                pathValue2 = self.getAskValueInUSDT(currSplit[2] + currSplit[1])
+                pathValue3 = self.getBidValueInUSDT(currSplit[2] + currSplit[0])
+
+                self.all_percentages.append([found_pair, percentage, pathValue1, pathValue2, pathValue3])
+
+
             # print('Net Gain: {}'.format((100*((newPrice/1.0) - 1)))))
             # print('Net Gain: {}'.format((100*((newPrice/1.0) - 1))))
             # print(getPrice(all_opps[-1][0].split('_')[2] + all_opps[-1][0].split('_')[1]))
 
 
 def main():
-
+    bot = TryBotDataScraper()
+    # print(bot.getAskValueInUSDT('TRXETH'))
     # Open csv file
     csv_tag = time.strftime('%b_%d_%H_%M_%S')
     csv_file = open('found_data_{}.csv'.format(csv_tag), 'w')
     csv_writer = csv.writer(csv_file)
-    csv_writer.writerow(['path', 'percentage', 'time'])
+    csv_writer.writerow(['path', 'percentage', 'path1', 'path2', 'path3', 'time'])
 
     timeTotal = time.time()
 
     # Run this continoously
+    # x = 1
     x = float(input("Minutes would you like to test for: "))
     print("Testing for for {} seconds | {} hours | {} days".format(
         x * 60, x / 60, (x / (60 * 24))))
 
-    bot = TryBotDataScraper()
 
     totalSecond = x * 60
     while (time.time() - timeTotal) < totalSecond:
@@ -214,13 +248,14 @@ def main():
 
             # Sort the list of found triplets in ascending order based on % gain
             all_opps = all_opps[np.argsort(all_opps[:, 1])]
-            print(all_opps[:, :2])
+            print(all_opps[:, :6])
 
             # Create time stamp for csv file
             time_stamp = time.strftime('%b %d %H:%M:%S')
 
             for i in all_opps:
-                csv_writer.writerow([i[0], i[1], time_stamp])
+                if (i[2] > 10) and (i[3] > 10) and (i[4] > 10):
+                    csv_writer.writerow([i[0], i[1], i[2], i[3], i[4], time_stamp])
         else:
             print('No Triplets Found.')
         bot.updateOrders()
@@ -230,6 +265,7 @@ def main():
 
     csv_file.close()
     print("Total time took {} seconds".format(time.time() - timeTotal))
+
 
 if __name__ == '__main__':
     main()
