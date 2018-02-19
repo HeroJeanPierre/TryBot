@@ -220,7 +220,7 @@ def main():
     # print(bot.getAskValueInUSDT('TRXETH'))
     # Open csv file
     csv_tag = time.strftime('%b_%d_%H_%M_%S')
-    csv_file = open('found_data_{}.csv'.format(csv_tag), 'w')
+    csv_file = open('found_data_v2_{}.csv'.format(csv_tag), 'w')
     csv_writer = csv.writer(csv_file)
     csv_writer.writerow(['path', 'percentage', 'path1', 'path2', 'path3', 'time'])
 
@@ -248,13 +248,13 @@ def main():
 
             # Sort the list of found triplets in ascending order based on % gain
             all_opps = all_opps[np.argsort(all_opps[:, 1])]
-            print(all_opps[:, :6])
 
             # Create time stamp for csv file
             time_stamp = time.strftime('%b %d %H:%M:%S')
 
             for i in all_opps:
-                if (i[2] > 10) and (i[3] > 10) and (i[4] > 10):
+                if (float(i[2]) > 10) and (float(i[3]) > 10) and (float(i[4]) > 10):
+                    print('{}, {}, {}, {}, {}, {}'.format(i[0], i[1], i[2], i[3], i[4], time_stamp))
                     csv_writer.writerow([i[0], i[1], i[2], i[3], i[4], time_stamp])
         else:
             print('No Triplets Found.')
